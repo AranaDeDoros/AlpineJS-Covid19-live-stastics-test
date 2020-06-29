@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Alpinejs COVID-19 Live Statistics Per Country and Case Type</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+    <script type="module" src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine-ie11.min.js" defer></script>
+</head>
+
+<body>
+    <div class="regularDiv">
+        <span>Data pulled from
+            <a href="https://documenter.getpostman.com/view/10808728/SzS8rjbc?version=latest" target="_blank">
+                Coronavirus COVID-19 API </a>
+        </span>
+    </div>
+    <div id="canvasDiv" class="regularDiv">
+        <canvas id="myChart"></canvas>
+    </div>
+    <div class="controls regularDiv">
+        <div>
+            <label for="cmbCountries">Select a country</label>
+            <select name="cmbCountries" id="cmbCountries" x-model.debounce.500ms="countrySlug">
+            </select>
+        </div>
+        <div>
+            <label for="cmbCountries">Select Case type</label>
+            <select name="cmbCaseType" id="cmbCaseType" x-model.debounce.500ms="caseType">
+                <option value="confirmed">Confirmed</option>
+                <option value="deaths">Death</option>
+                <option value="recovered">Recovered</option>
+                <option value="active">Active</option>
+            </select>
+        </div>
+    </div>
+    <div id="divTable" class="regularDiv" x-data="{ open: false }">
+        <button @click="open = true">Show Table</button>
+        <table id="tblCases" x-show="open" @click.away="open = false">
+            <caption x-text="tableTitle"></caption>
+            <thead>
+                <th>Date</th>
+                <th>Confirmed</th>
+                <th>Deaths</th>
+                <th>Recovered</th>
+                <th>Active</th>
+            </thead>
+            <tbody>
+                <template x-for="covidcase in cases">
+                    <tr class="regularRow">
+                        <td class="regularTableElement" x-text="covidcase.Date"></td>
+                        <td class="regularTableElement" x-text="covidcase.Confirmed"></td>
+                        <td class="regularTableElement" x-text="covidcase.Deaths"></td>
+                        <td class="regularTableElement" x-text="covidcase.Recovered"></td>
+                        <td class="regularTableElement" x-text="covidcase.Active"></td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+    <script>
+    const cmbCountries = document.getElementById("cmbCountries");
+    const cmbCaseType = document.getElementById("cmbCaseType");
+    const tblCases = document.querySelector("#tblCases tbody");
+
+    //bound variable to cmbCountries
+    let countrySlug = cmbCountries.value;
+    //bound variable to cmbCaseType
+    let caseType = cmbCaseType.value;
+    //bound variable to table
+    let cases = [];
+    //bound to table title
+    let tableTitle = '';
+
+    //for chartjs graph
+    let dataSets = [];
+    let labels = [];
+
+    const requestOptions = {
+        method: 'GET',
+        redirect: 'follow'
+    };
+
+    const main = async () => {
+        await retrieveCountries();
+        await retrieveCases(countrySlug, caseType);
+        await plotLineGraph();
+        //console.log(countrySlug);
+    }
+
+    const redrawPlot = async () => {
+    	emptyChartJSArrays();
+    	countrySlug = cmbCountries.value;
+    	caseType = cmbCaseType.value;
+    	await retrieveCases(countrySlug, caseType);
+        await plotLineGraph();
+        //console.log(countrySlug);
+    }
+
+    cmbCountries.addEventListener('change', () => {
+    	console.log(countrySlug);
+        countrySlug != '' ? redrawPlot() : alert('fuggg');
+    });
+
+    cmbCaseType.addEventListener('change', () => {
+    	console.log(countrySlug);
+        countrySlug != '' ? redrawPlot() : alert('fuggg');
+    });
+
+    main();
+
+    async function retrieveCountries() {
+
+        if (cmbCountries.length < 1) {
+
+            await fetch("https://api.covid19api.com/countries", requestOptions)
+                .then(response => response.json())
+                .then((result) => {
+                    let countriesArr = result;
+                    let nCountries = countriesArr.length;
+                    let option = "";
+                    console.time('cr');
+                    for (let i = 0; i < nCountries; i++) {
+                        if (i == 0) {
+                            option = `<option selected value="${countriesArr[i].Slug}">${countriesArr[i].Country}</value>`;
+                            countrySlug = countriesArr[i].Slug;
+                        } else {
+                            option = `<option value="${countriesArr[i].Slug}">${countriesArr[i].Country}</value>`;
+                        }
+                        cmbCountries.insertAdjacentHTML('beforeend', option);
+                    }
+                    console.timeEnd('cr');
+
+                })
+                .catch(error => console.log('error', error));
+        }
+
+    }
+
+    async function retrieveCases(countrySlug, caseType = "confirmed") {
+    	console.log('RETRIEVING CASES FOR'+countrySlug);
+        await fetch(`https://api.covid19api.com/live/country/${countrySlug}/status/${caseType}`, requestOptions)
+            .then(response => response.json())
+            .then(result => drawTable(result))
+            .catch(error => console.log('error', error));
+
+
+    }
+
+    function drawTable(casesArray) {
+    	console.log('DRAWING TABLE FOR'+countrySlug)
+        let nCases = casesArray.length;
+        let tableElement = "";
+        console.time('cs');
+        //tblCases.innerHTML = '';
+        cases = casesArray;
+        console.log('CASES',cases);
+        tableTitle = `Cases for ${cases[0].Country}`;
+        for (let i = 0; i < nCases; i++) {
+        	let caseTypeUp = caseType.charAt(0).toUpperCase() +caseType.slice(1);
+            labels.push(casesArray[i].Date);
+            dataSets.push(casesArray[i][caseTypeUp]);
+        }
+
+
+
+        /*for (let i = 0; i < nCases; i++) {
+            tableElement = `<tr class="regularRow">
+            			<td class="regularTableElement">${casesArray[i].Date}</td>
+            			<td class="regularTableElement">${casesArray[i].Confirmed}</td>
+            			<td class="regularTableElement">${casesArray[i].Deaths}</td>
+            			<td class="regularTableElement">${casesArray[i].Recovered}</td>
+            			<td class="regularTableElement">${casesArray[i].Active}</td>
+            		  </tr>`;
+            tblCases.insertAdjacentHTML('beforeend', tableElement);
+        }*/
+        console.timeEnd('cs');
+    }
+
+    async function plotLineGraph() {
+    	console.log('DRAWING PLOT FOR'+countrySlug);
+        let ctx = document.getElementById('myChart').getContext('2d');
+        let chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'COVID-19 Cases for the latest 10 days',
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    borderColor: 'rgb(248, 0, 52)',
+                    data: dataSets
+                }]
+            },
+
+            // Configuration options go here
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: {
+                    easing: 'easeInOutBounce'
+                }
+
+            }
+        });
+    }
+
+    function emptyChartJSArrays(){
+    	console.log('CLEANING ARRAYS');
+    	dataSets = [];
+    	labels = [];
+    }
+    </script>
+</body>
+
+</html>

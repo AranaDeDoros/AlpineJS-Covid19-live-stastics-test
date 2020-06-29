@@ -1,0 +1,97 @@
+html{
+	font-family: 'Jost', sans-serif;
+}
+
+body {
+    font-size: 18px;
+
+}
+
+caption {
+    font-weight: 600;
+    font-size: 1.6em;
+    background-color: #EC1E31;
+}
+
+div {
+    font-size: 1.5em;
+    margin-bottom: 1.5%;
+}
+
+
+select {
+    font-size: 0.5em;
+    margin-bottom: 2%;
+    padding: 0.3% 0.3%;
+    border: 3px solid #AAAAAA;
+    border-radius: 3px;
+}
+
+label {
+    font-size: 0.6em;
+
+}
+
+button {
+    font-size: 0.6em;
+    padding: 1% 1%;
+    color: #ddd;
+    background-color: #F10D28;
+    border-radius: 6px;
+    margin-bottom: 1%;
+    box-shadow: 6px 3px 5px #ddd;
+    font-weight: 600;  
+}
+
+button:hover{
+	background-color: #EF4C5F;
+}
+
+thead{
+	background-color: #EC1E31;
+}
+
+table {
+    text-align: justify-all;
+    border-collapse: collapse;
+    vertical-align: middle;
+    background-color: #EEE;
+	font-size: 0.7em
+}
+
+td,th {
+    text-align: justify-all;
+    border: 1px solid #ACA8A8;
+    padding: 0.5em;
+}
+
+tr:nth-child(even){
+	background-color: #8CA8A8;
+}
+.regularDiv{
+	margin-left: 2%;
+}
+
+.controls{
+	padding-left: 1%;
+	display: flex;
+	flex: auto;
+	flex-wrap: wrap;
+	border: 2px solid #AAAAAA;
+	border-radius: 2px;
+}
+
+a{
+	color: #EF123C;
+}
+
+a:hover{
+	color: #FF234C;
+}
+span{
+	font-size: 1.5em;
+}
+
+select:hover{
+	color: #DA042F;
+}
